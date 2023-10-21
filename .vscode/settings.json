@@ -1,0 +1,6 @@
+{
+    "files.associations": {
+        "gcrypt.h": "c"
+    },
+    "zig.initialSetupDone": true
+}
