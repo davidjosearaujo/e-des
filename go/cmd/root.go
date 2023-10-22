@@ -31,7 +31,7 @@ var (
  * The row rotation follows exactly the same logic, but with 
  * the rows and uses the second half of the shuffle key.
  */	
-func rubikShuffle(matrix []byte, shuffleKey []int) ([]byte, error){
+func RubikShuffle(matrix []byte, shuffleKey []int) ([]byte, error){
 	// Size of matrix
 	sideSize := int(math.Sqrt(float64(len(matrix))))
 	if sideSize*sideSize != len(matrix) {
@@ -74,15 +74,14 @@ func rubikShuffle(matrix []byte, shuffleKey []int) ([]byte, error){
 	return matrix, nil
 }
 
-func keygen() {
-	Key = sha256.Sum256([]byte(Password))
-	sboxgen()
-}
 
-func sboxgen() {
+func SboxGen() {
+	// Key generation
+	Key = sha256.Sum256([]byte(Password))
+
 	aead, _ := chacha20poly1305.NewX(Key[:])
 
-	// Generate pre-mixing clean box
+	// Generate pre-shuffle clean box
 	cleanbox := []byte{}
 	for i := 0; i < 256; i++ {
 		for j := 0; j < 16; j++ {
@@ -94,13 +93,16 @@ func sboxgen() {
 	ciphertext := aead.Seal(nil, make([]byte, chacha20poly1305.NonceSizeX), make([]byte, 128*2), nil)
 	ciphertext = ciphertext[:256]
 
+	fmt.Printf("%02x\n", ciphertext)
+	os.Exit(0)
+
 	// Convert to shuffle key list
 	shuffleKey := []int{}
 	for i := 0; i < len(ciphertext); i += 1 {
 		shuffleKey = append(shuffleKey, int(ciphertext[i])%64)
 	}
 
-	rubikShuffle(cleanbox, shuffleKey)
+	RubikShuffle(cleanbox, shuffleKey)
 }
 
 // rootCmd represents the base command when called without any subcommands
