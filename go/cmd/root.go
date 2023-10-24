@@ -23,49 +23,49 @@ var (
 
 /* Rubik's Shuffle
  * This shuffle technique is based on the way a Rubik cube is shuffled.
- * Given a byte array with a perfect square length, and a shuffle key 
+ * Given a byte array with a perfect square length, and a shuffle key
  * of the same length as the root, the algorithm rotates each column
  * the same number of places has indicated in the shuffle key at
  * at the index indicated by the number of the column. This, obviously,
  * will used half of the shuffle key.
- * The row rotation follows exactly the same logic, but with 
+ * The row rotation follows exactly the same logic, but with
  * the rows and uses the second half of the shuffle key.
- */	
-func RubikShuffle(matrix []byte, shuffleKey []int) ([]byte, error){
+ */
+func RubikShuffle(matrix []byte, shuffleKey []int) ([]byte, error) {
 	// Size of matrix
 	sideSize := int(math.Sqrt(float64(len(matrix))))
 	if sideSize*sideSize != len(matrix) {
 		return []byte{}, errors.New("it is now a square matrix")
 	}
-	
+
 	fmt.Printf("%02x\n", matrix)
 	fmt.Printf("Original length: %d\n\n", len(matrix))
 
 	// Rotate columns
-	for i:= 0; i < sideSize; i += 1{
+	for i := 0; i < sideSize; i += 1 {
 		temp := []byte{}
-		for j:= 0; j < len(matrix); j += sideSize {
+		for j := 0; j < len(matrix); j += sideSize {
 			temp = append(temp, matrix[i+j])
 		}
 		lastK := temp[(sideSize - shuffleKey[i]):sideSize]
 		firstSMK := temp[:(sideSize - shuffleKey[i])]
 		temp = append(lastK, firstSMK...)
-		for j,k := 0, 0; j < len(matrix); j, k = j+sideSize, k+1 {
-			matrix[i+j]=temp[k]
+		for j, k := 0, 0; j < len(matrix); j, k = j+sideSize, k+1 {
+			matrix[i+j] = temp[k]
 		}
 	}
 
 	shuffleKey = shuffleKey[sideSize:]
 
 	// Rotate rows
-	for i,k := 0,0; i < len(matrix); i,k = i+sideSize, k+1 {
-		temp := matrix[i:i+sideSize]
+	for i, k := 0, 0; i < len(matrix); i, k = i+sideSize, k+1 {
+		temp := matrix[i : i+sideSize]
 		lastK := temp[(sideSize - shuffleKey[k]):sideSize]
 		firstSMK := temp[:(sideSize - shuffleKey[k])]
 		temp = append(lastK, firstSMK...)
 		temp = append(matrix[:i], temp...)
 		matrix = append(temp, matrix[i+sideSize:]...)
-	}	
+	}
 
 	fmt.Printf("%02x\n", matrix)
 	fmt.Printf("Final length: %d\n", len(matrix))
@@ -73,7 +73,6 @@ func RubikShuffle(matrix []byte, shuffleKey []int) ([]byte, error){
 
 	return matrix, nil
 }
-
 
 func SboxGen() {
 	// Key generation
@@ -92,9 +91,6 @@ func SboxGen() {
 	// Generate list of exchange indexes
 	ciphertext := aead.Seal(nil, make([]byte, chacha20poly1305.NonceSizeX), make([]byte, 128*2), nil)
 	ciphertext = ciphertext[:256]
-
-	fmt.Printf("%02x\n", ciphertext)
-	os.Exit(0)
 
 	// Convert to shuffle key list
 	shuffleKey := []int{}
