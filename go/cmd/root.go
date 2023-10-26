@@ -19,6 +19,7 @@ import (
 var (
 	Password string
 	Key      [32]byte
+	SBboxes  [16][256]byte
 )
 
 /* Rubik's Shuffle
@@ -67,10 +68,6 @@ func RubikShuffle(matrix []byte, shuffleKey []int) ([]byte, error) {
 		matrix = append(temp, matrix[i+sideSize:]...)
 	}
 
-	fmt.Printf("%02x\n", matrix)
-	fmt.Printf("Final length: %d\n", len(matrix))
-	os.Exit(0)
-
 	return matrix, nil
 }
 
@@ -98,7 +95,16 @@ func SboxGen() {
 		shuffleKey = append(shuffleKey, int(ciphertext[i])%64)
 	}
 
-	RubikShuffle(cleanbox, shuffleKey)
+	shuffledBoxes, err := RubikShuffle(cleanbox, shuffleKey)
+	if err != nil {
+		panic(fmt.Errorf("error during rubik shuffling of clean S-boxes: %s", err))
+	}
+	
+	// TODO: Distribute matrix to the variable SBboxes
+
+	fmt.Printf("%02x\n", shuffledBoxes)
+	fmt.Printf("Final length: %d\n", len(shuffledBoxes))
+	os.Exit(0)
 }
 
 // rootCmd represents the base command when called without any subcommands

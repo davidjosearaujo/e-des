@@ -2,6 +2,10 @@ const std = @import("std");
 const sha2 = std.crypto.hash.sha2;
 const chacha_poly = std.crypto.aead.chacha_poly;
 
+pub fn RubikShuffle() !void{
+    
+}
+
 pub fn SboxGen() !void {
     // TESTING
     var password = "hello";
