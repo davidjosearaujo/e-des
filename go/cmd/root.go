@@ -104,8 +104,9 @@ func SboxGen() {
 	}
 	
 	// TODO: Distribute matrix to the variable SBboxes
-
-	fmt.Printf("Final length: %d\n", len(shuffledBoxes))
+	for i:=0; i < 16; i++ {
+		SBboxes[i] = [256]byte(shuffledBoxes[i*256:i*256+256])
+	}
 }
 
 // rootCmd represents the base command when called without any subcommands
