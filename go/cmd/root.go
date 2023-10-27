@@ -32,15 +32,24 @@ var (
  * The row rotation follows exactly the same logic, but with
  * the rows and uses the second half of the shuffle key.
  */
-func RubikShuffle(matrix []byte, shuffleKey []int) ([]byte, error) {
-	// Size of matrix
+func RubikShuffle(matrix []byte, ciphertext []byte) ([]byte, error) {
 	sideSize := int(math.Sqrt(float64(len(matrix))))
+
+	// Size of matrix
 	if sideSize*sideSize != len(matrix) {
 		return []byte{}, errors.New("it is now a square matrix")
 	}
 
-	fmt.Printf("%02x\n", matrix)
-	fmt.Printf("Original length: %d\n\n", len(matrix))
+	// Size of ciphertext
+	if sideSize * 2 != len(ciphertext) {
+		return []byte{}, errors.New("shuffling key is not the correct size")
+	}
+
+	// Convert to shuffle key list
+	shuffleKey := []int{}
+	for i := 0; i < len(ciphertext); i += 1 {
+		shuffleKey = append(shuffleKey, int(ciphertext[i])%64)
+	}
 
 	// Rotate columns
 	for i := 0; i < sideSize; i += 1 {
@@ -86,25 +95,17 @@ func SboxGen() {
 	}
 
 	// Generate list of exchange indexes
-	ciphertext := aead.Seal(nil, make([]byte, chacha20poly1305.NonceSizeX), make([]byte, 128*2), nil)
-	ciphertext = ciphertext[:256]
+	ciphertext := aead.Seal(nil, make([]byte, chacha20poly1305.NonceSizeX), make([]byte, 128), nil)
+	ciphertext = ciphertext[:128]
 
-	// Convert to shuffle key list
-	shuffleKey := []int{}
-	for i := 0; i < len(ciphertext); i += 1 {
-		shuffleKey = append(shuffleKey, int(ciphertext[i])%64)
-	}
-
-	shuffledBoxes, err := RubikShuffle(cleanbox, shuffleKey)
+	shuffledBoxes, err := RubikShuffle(cleanbox, ciphertext)
 	if err != nil {
 		panic(fmt.Errorf("error during rubik shuffling of clean S-boxes: %s", err))
 	}
 	
 	// TODO: Distribute matrix to the variable SBboxes
 
-	fmt.Printf("%02x\n", shuffledBoxes)
 	fmt.Printf("Final length: %d\n", len(shuffledBoxes))
-	os.Exit(0)
 }
 
 // rootCmd represents the base command when called without any subcommands
