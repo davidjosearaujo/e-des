@@ -45,7 +45,7 @@ func RubikShuffle(matrix []byte, ciphertext []byte) ([]byte, error) {
 		return []byte{}, errors.New("shuffling key is not the correct size")
 	}
 
-	// Convert to shuffle key list
+	// Convert to shuffle key list with modulus of 64
 	shuffleKey := []int{}
 	for i := 0; i < len(ciphertext); i += 1 {
 		shuffleKey = append(shuffleKey, int(ciphertext[i])%64)
@@ -58,8 +58,8 @@ func RubikShuffle(matrix []byte, ciphertext []byte) ([]byte, error) {
 			temp = append(temp, matrix[i+j])
 		}
 		lastK := temp[(sideSize - shuffleKey[i]):sideSize]
-		firstSMK := temp[:(sideSize - shuffleKey[i])]
-		temp = append(lastK, firstSMK...)
+		firstK := temp[:(sideSize - shuffleKey[i])]
+		temp = append(lastK, firstK...)
 		for j, k := 0, 0; j < len(matrix); j, k = j+sideSize, k+1 {
 			matrix[i+j] = temp[k]
 		}
