@@ -11,18 +11,13 @@ import (
 // encryptCmd represents the encrypt command
 var encryptCmd = &cobra.Command{
 	Use:   "encrypt",
-	Short: "A brief description of your command",
-	Long: `A longer description that spans multiple lines and likely contains examples
-and usage of using your command. For example:
-
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
+	Short: "Encrypt the content of the message",
 	PreRun: func(cmd *cobra.Command, args []string) {
 		SboxGen()
 	},
 	Run: func(cmd *cobra.Command, args []string) {
-		// encrypt
+		// TODO: Implement encryption process
+		// 			- F networks
 	},
 }
 

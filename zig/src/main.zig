@@ -55,13 +55,13 @@ pub fn RubikShuffle(matrix: []u8, ciphertext: []const u8) !void {
         const allocator = arena.allocator();
         var newrow = try std.mem.concat(allocator, u8, &[_][]const u8{ lastk, firstK });
 
-        for((i*sideSize)..(i*sideSize)+sideSize, 0..sideSize) |j, k| {
+        for ((i * sideSize)..(i * sideSize) + sideSize, 0..sideSize) |j, k| {
             matrix[j] = newrow[k];
         }
     }
 }
 
-pub fn SboxGen() !void {
+pub fn SboxGen(cleanbox: []u8) !void {
     // TESTING
     var password = "hello";
 
@@ -70,7 +70,7 @@ pub fn SboxGen() !void {
     sha2.Sha256.hash(password, &key, .{});
 
     // Generate pre-shuffle clean box
-    var cleanbox = [_]u8{0} ** 4096;
+    //var cleanbox = [_]u8{0} ** 4096;
     for (0..256) |i| {
         for (0..16) |j| {
             cleanbox[i * 16 + j] = @as(u8, @intCast(i));
@@ -86,9 +86,11 @@ pub fn SboxGen() !void {
     var tag: [aead.tag_length]u8 = undefined;
     aead.encrypt(&ciphertext, &tag, &m, ad, nonce, key);
 
-    try RubikShuffle(&cleanbox, &ciphertext);
+    try RubikShuffle(cleanbox, &ciphertext);
 }
 
 pub fn main() !void {
-    try SboxGen();
+    var sboxes = [_]u8{0} ** 4096;
+    try SboxGen(&sboxes);
+    std.debug.print("{d}\n\n", .{sboxes});
 }

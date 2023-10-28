@@ -103,7 +103,7 @@ func SboxGen() {
 		panic(fmt.Errorf("error during rubik shuffling of clean S-boxes: %s", err))
 	}
 	
-	// TODO: Distribute matrix to the variable SBboxes
+	
 	for i:=0; i < 16; i++ {
 		SBboxes[i] = [256]byte(shuffledBoxes[i*256:i*256+256])
 	}
