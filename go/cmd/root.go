@@ -18,8 +18,9 @@ import (
 // Global variables
 var (
 	Password string
+	Message  string
 	Key      [32]byte
-	SBboxes  [16][256]byte
+	SBboxes  [][]byte
 )
 
 /* Rubik's Shuffle
@@ -41,7 +42,7 @@ func RubikShuffle(matrix []byte, ciphertext []byte) ([]byte, error) {
 	}
 
 	// Size of ciphertext
-	if sideSize * 2 != len(ciphertext) {
+	if sideSize*2 != len(ciphertext) {
 		return []byte{}, errors.New("shuffling key is not the correct size")
 	}
 
@@ -102,10 +103,9 @@ func SboxGen() {
 	if err != nil {
 		panic(fmt.Errorf("error during rubik shuffling of clean S-boxes: %s", err))
 	}
-	
-	
-	for i:=0; i < 16; i++ {
-		SBboxes[i] = [256]byte(shuffledBoxes[i*256:i*256+256])
+
+	for i := 0; i < 16; i++ {
+		SBboxes = append(SBboxes, []byte(shuffledBoxes[i*256 : i*256+256]))
 	}
 }
 
@@ -125,5 +125,6 @@ func Execute() {
 }
 
 func init() {
-	rootCmd.PersistentFlags().StringVarP(&Password, "password", "p", "", "Encryption/ decryption password")
+	rootCmd.PersistentFlags().StringVarP(&Password, "password", "p", "", "Encryption/decryption password")
+	rootCmd.PersistentFlags().StringVarP(&Message, "message", "m", "", "Message to encrypt/decrypt")
 }
