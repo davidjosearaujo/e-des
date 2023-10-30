@@ -5,6 +5,7 @@ package cmd
 
 import (
 	"bytes"
+	"encoding/hex"
 	"errors"
 	"fmt"
 
@@ -34,16 +35,19 @@ func DecFeistelNetwork(block []byte, sbox []byte) ([]byte){
 	var temp = make([]byte, len(block)/2)
 	index := block[len(block)/2-1]
 
-	for i, j:=len(block)-1, 0; i >= 0; i, j = i-1, j+1 {
-		if i >= len(block)/2 && j < len(block)/2{
-			out[j+(len(block)/2)] = block[j]			
-			temp[j] = sbox[index]
-			if i > len(block)/2 {
-				index += block[i-len(block)/2-1]
-			}
-		}else{
-			out[j-(len(block)/2)] = temp[j-(len(block)/2)] ^ block[j]
+	for i:=0; i < len(block)/2; i++ {
+		// Li -> Ri-1
+		out[len(block)/2+i] = block[i]
+		// Li -> fi
+		temp[i] = sbox[index]
+		if i <= 2{
+			index += block[len(block)/2-2-i]
 		}
+	}
+
+	for i:=0; i < len(block)/2; i++{
+		// Ri XOR f(Ki)
+		out[i] = temp[i] ^ block[i+len(block)/2]
 	}
 
 	return out
@@ -58,19 +62,15 @@ var decryptCmd = &cobra.Command{
 	},
 	Run: func(cmd *cobra.Command, args []string) {
 		var out []byte
+		fmt.Printf("Ciphered block\t\tOriginal block\n")
 
 		// Cast message to byte array
-		blocks := []byte(Message)
+		blocks, _ := hex.DecodeString(Message)
 
 		// Iterate through all blocks
 		for i:=0; i < len(blocks); i+=8 {
-			var block []byte
-			if i == 120 {
-				block = blocks[i:]		
-			}else{
-				block = blocks[i:i+8]
-			}
-			fmt.Printf("%02x\n",block)
+			block := blocks[i:i+8]
+			fmt.Printf("%x\t",block)
 
 			// Each block goes through a Feistel network with each S-Box
 			// but now in reverse order
@@ -78,13 +78,14 @@ var decryptCmd = &cobra.Command{
 				block = DecFeistelNetwork(block, SBboxes[j])
 			}
 
+			fmt.Printf("%x\n",block)
 			out = append(out, block...)
 		}
 
 		// Remove PKCS#7 padding from the message
-		message, _ := PKCS7strip(out, 64)
+		message, _ := PKCS7strip(out, 8)
 
-		fmt.Printf("Message: %s\n", message)
+		fmt.Printf("\nMessage: %s\n\n", message)
 	},
 }
 
