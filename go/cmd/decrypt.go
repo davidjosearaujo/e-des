@@ -62,7 +62,6 @@ var decryptCmd = &cobra.Command{
 	},
 	Run: func(cmd *cobra.Command, args []string) {
 		var out []byte
-		fmt.Printf("Ciphered block\t\tOriginal block\n")
 
 		// Cast message to byte array
 		blocks, _ := hex.DecodeString(Message)
@@ -70,7 +69,6 @@ var decryptCmd = &cobra.Command{
 		// Iterate through all blocks
 		for i:=0; i < len(blocks); i+=8 {
 			block := blocks[i:i+8]
-			fmt.Printf("%x\t",block)
 
 			// Each block goes through a Feistel network with each S-Box
 			// but now in reverse order
@@ -78,14 +76,13 @@ var decryptCmd = &cobra.Command{
 				block = DecFeistelNetwork(block, SBboxes[j])
 			}
 
-			fmt.Printf("%x\n",block)
 			out = append(out, block...)
 		}
 
 		// Remove PKCS#7 padding from the message
 		message, _ := PKCS7strip(out, 8)
 
-		fmt.Printf("\nMessage: %s\n\n", message)
+		fmt.Printf("%s\n", message)
 	},
 }
 

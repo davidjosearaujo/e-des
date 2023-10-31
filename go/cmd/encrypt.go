@@ -51,7 +51,6 @@ var encryptCmd = &cobra.Command{
 	},
 	Run: func(cmd *cobra.Command, args []string) {	
 		var out []byte
-		fmt.Printf("Original block\t\tCiphered block\n")
 
 		// Add PKCS#7 padding to the message
 		blocks, _ := PKCS7pad([]byte(Message), 8)
@@ -59,17 +58,15 @@ var encryptCmd = &cobra.Command{
 		// Iterate through all blocks
 		for i:=0; i < len(blocks); i += 8{
 			block := blocks[i:i+8]
-			fmt.Printf("%x\t",block)
 
 			// Each block goes through a Feistel network with each S-Box
 			for _, box := range SBboxes {
 				block = EncFeistelNetwork(block, box)
 			}
 			
-			fmt.Printf("%x\n",block)
 			out = append(out, block...)
 		}
-		fmt.Printf("\nCiphered: %x\n\n", out)
+		fmt.Printf("%x\n", out)
 	},
 }
 

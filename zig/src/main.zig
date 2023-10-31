@@ -3,6 +3,12 @@ const math = std.math;
 const sha2 = std.crypto.hash.sha2;
 const chacha_poly = std.crypto.aead.chacha_poly;
 
+pub fn EncFeistelNetwork(block: []u8, sbox: []u8) []u8 {
+    _ = sbox;
+    var out = [_]u8{0} ** block.len;
+    _ = out;
+}
+
 pub fn RubikShuffle(matrix: []u8, ciphertext: []const u8) !void {
     var sideSize = math.sqrt(matrix.len);
 
@@ -87,10 +93,36 @@ pub fn SboxGen(cleanbox: []u8) !void {
     aead.encrypt(&ciphertext, &tag, &m, ad, nonce, key);
 
     try RubikShuffle(cleanbox, &ciphertext);
+
+    //return ciphertext;
 }
 
 pub fn main() !void {
+    // Argument calling
+    //      1º: encrypt or decrypt option
+    //      2º: password
+    //      3º: message (in quotes)
+    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    defer _ = gpa.deinit();
+    const allocator = gpa.allocator();
+    const args = try std.process.argsAlloc(allocator);
+    defer std.process.argsFree(allocator, args);
+    std.debug.print("Arguments: {s}\n", .{args});
+
+    var option = args[1];
+    var password = args[2];
+    _ = password;
+    var message = args[3];
+    _ = message;
+
+    // SBox generation
+    // TODO: the password mus be passed as argument
     var sboxes = [_]u8{0} ** 4096;
     try SboxGen(&sboxes);
-    std.debug.print("{d}\n\n", .{sboxes});
+
+    if (std.mem.eql(u8, option, "encrypt")) {
+        // TODO: Call encryption feistel network
+    } else if (std.mem.eql(u8, option, "decrypt")) {
+        // TODO: Call decryption feistel network
+    }
 }
