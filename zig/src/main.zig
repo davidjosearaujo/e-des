@@ -1,7 +1,50 @@
 const std = @import("std");
+const ArrayList = std.ArrayList;
 const math = std.math;
 const sha2 = std.crypto.hash.sha2;
 const chacha_poly = std.crypto.aead.chacha_poly;
+
+const help_message =
+    \\Usage:
+    \\    e-des [MODE] <PASSWORD> <MESSAGE>
+    \\
+    \\Examples:
+    \\    e-des encrypt password1234 "This is my secret, there are many like it, but this one is mine"
+    \\    e-des decrypt password1234 a35f8s12069c63
+    \\
+    \\MODE:
+    \\    encrypt     encrypt the message with given password, returns a ciphertext in hex format
+    \\    decrypt     encrypt the message with given password, returns plaintext message in ASCII format
+    \\
+    \\
+;
+
+// DONE
+pub fn PKCS7pad(data: []u8, blockSize: u8) ![]u8 {
+    if (blockSize <= 1 or blockSize >= 256) {
+        std.debug.print("pkcs7: Invalid block size {d}", .{blockSize});
+        std.os.exit(1);
+    } else {
+        var padLen: u8 = blockSize - @as(u8, @intCast(data.len)) % blockSize;
+
+        var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
+        defer arena.deinit();
+        const allocator = arena.allocator();
+
+        var padding = ArrayList(u8).init(allocator);
+        //defer padding.deinit();
+        for (0..data.len) |i| {
+            try padding.append(data[i]);
+        }
+        for (0..padLen) |i| {
+            _ = i;
+            try padding.append(padLen);
+        }
+
+        var paddedData = padding.items[0..];
+        return try std.heap.page_allocator.dupe(u8, paddedData);
+    }
+}
 
 pub fn EncFeistelNetwork(block: []u8, sbox: []u8) []u8 {
     _ = sbox;
@@ -9,6 +52,7 @@ pub fn EncFeistelNetwork(block: []u8, sbox: []u8) []u8 {
     _ = out;
 }
 
+// DONE
 pub fn RubikShuffle(matrix: []u8, ciphertext: []const u8) !void {
     var sideSize = math.sqrt(matrix.len);
 
@@ -67,16 +111,13 @@ pub fn RubikShuffle(matrix: []u8, ciphertext: []const u8) !void {
     }
 }
 
-pub fn SboxGen(cleanbox: []u8) !void {
-    // TESTING
-    var password = "hello";
-
+// DONE
+pub fn SboxGen(cleanbox: []u8, password: []u8) !void {
     // Key generation
     var key: [sha2.Sha256.digest_length]u8 = undefined;
     sha2.Sha256.hash(password, &key, .{});
 
     // Generate pre-shuffle clean box
-    //var cleanbox = [_]u8{0} ** 4096;
     for (0..256) |i| {
         for (0..16) |j| {
             cleanbox[i * 16 + j] = @as(u8, @intCast(i));
@@ -93,12 +134,10 @@ pub fn SboxGen(cleanbox: []u8) !void {
     aead.encrypt(&ciphertext, &tag, &m, ad, nonce, key);
 
     try RubikShuffle(cleanbox, &ciphertext);
-
-    //return ciphertext;
 }
 
 pub fn main() !void {
-    // Argument calling
+    // Argument calling order
     //      1º: encrypt or decrypt option
     //      2º: password
     //      3º: message (in quotes)
@@ -107,22 +146,30 @@ pub fn main() !void {
     const allocator = gpa.allocator();
     const args = try std.process.argsAlloc(allocator);
     defer std.process.argsFree(allocator, args);
-    std.debug.print("Arguments: {s}\n", .{args});
 
+    // Number of arguments
+    if (4 != args.len) {
+        std.debug.print(help_message, .{});
+        std.os.exit(1);
+    }
+
+    // Calling arguments
     var option = args[1];
     var password = args[2];
-    _ = password;
     var message = args[3];
-    _ = message;
 
     // SBox generation
-    // TODO: the password mus be passed as argument
     var sboxes = [_]u8{0} ** 4096;
-    try SboxGen(&sboxes);
+    try SboxGen(&sboxes, password);
 
     if (std.mem.eql(u8, option, "encrypt")) {
+        var paddedData = try PKCS7pad(message, 8);
+        _ = paddedData;
         // TODO: Call encryption feistel network
     } else if (std.mem.eql(u8, option, "decrypt")) {
         // TODO: Call decryption feistel network
+        // TODO: Remove padding
+    } else {
+        std.debug.print("Option not available! Please choose either 'encrypt' or 'decrypt' mode\n", .{});
     }
 }
