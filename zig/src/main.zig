@@ -1,4 +1,7 @@
 const std = @import("std");
+const pkcs = @import("./pkcs7.zig");
+const fent = @import("./feistelnetwork.zig.zig");
+
 const ArrayList = std.ArrayList;
 const math = std.math;
 const sha2 = std.crypto.hash.sha2;
@@ -20,51 +23,18 @@ const help_message =
 ;
 
 // DONE
-pub fn PKCS7pad(data: []u8, blockSize: u8) ![]u8 {
-    if (blockSize <= 1 or blockSize >= 256) {
-        std.debug.print("pkcs7: Invalid block size {d}", .{blockSize});
-        std.os.exit(1);
-    } else {
-        var padLen: u8 = blockSize - @as(u8, @intCast(data.len)) % blockSize;
-
-        var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
-        defer arena.deinit();
-        const allocator = arena.allocator();
-
-        var padding = ArrayList(u8).init(allocator);
-        //defer padding.deinit();
-        for (0..data.len) |i| {
-            try padding.append(data[i]);
-        }
-        for (0..padLen) |i| {
-            _ = i;
-            try padding.append(padLen);
-        }
-
-        var paddedData = padding.items[0..];
-        return try std.heap.page_allocator.dupe(u8, paddedData);
-    }
-}
-
-pub fn EncFeistelNetwork(block: []u8, sbox: []u8) []u8 {
-    _ = sbox;
-    var out = [_]u8{0} ** block.len;
-    _ = out;
-}
-
-// DONE
 pub fn RubikShuffle(matrix: []u8, ciphertext: []const u8) !void {
     var sideSize = math.sqrt(matrix.len);
 
     // Size of matrix
     if (sideSize * sideSize != matrix.len) {
-        std.debug.print("it is now a square matrix\n", .{});
+        std.debug.print("rubikShuffle: it is now a square matrix\n", .{});
         std.os.exit(1);
     }
 
     // Size of ciphertext
     if (sideSize * 2 != ciphertext.len) {
-        std.debug.print("shuffling key is not the correct size\n", .{});
+        std.debug.print("rubikShuffle:shuffling key is not the correct size\n", .{});
         std.os.exit(1);
     }
 
@@ -163,12 +133,17 @@ pub fn main() !void {
     try SboxGen(&sboxes, password);
 
     if (std.mem.eql(u8, option, "encrypt")) {
-        var paddedData = try PKCS7pad(message, 8);
-        _ = paddedData;
+        std.debug.print("{d}\n", .{message});
+        var paddedData = try pkcs.PKCS7pad(message, 8);
+        std.debug.print("{d}\n", .{paddedData});
+
         // TODO: Call encryption feistel network
     } else if (std.mem.eql(u8, option, "decrypt")) {
         // TODO: Call decryption feistel network
-        // TODO: Remove padding
+
+        // DONE (uncomment later)
+        //var unpaddedData = try pkcs.PKCS7strip(paddedData, 8);
+        //std.debug.print("{d}\n", .{unpaddedData});
     } else {
         std.debug.print("Option not available! Please choose either 'encrypt' or 'decrypt' mode\n", .{});
     }
