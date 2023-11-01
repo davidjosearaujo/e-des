@@ -51,6 +51,6 @@ test "pad & unpad" {
     var data = [_]u8{ 't', 'e', 's', 't' };
     var padded = try PKCS7pad(data[0..], 8);
     var unpadded = try PKCS7strip(padded, 8);
-    std.debug.print("\nOriginal:\t{d}\nPadded:\t\t{d}\nUnpadded:\t{d}\n", .{data, padded, unpadded});
+    std.debug.print("\nOriginal:\t{d}\nPadded:\t\t{d}\nUnpadded:\t{d}\n", .{ data, padded, unpadded });
     std.debug.assert(std.mem.eql(u8, &data, unpadded));
 }

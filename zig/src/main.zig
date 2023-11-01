@@ -1,6 +1,6 @@
 const std = @import("std");
 const pkcs = @import("./pkcs7.zig");
-const fent = @import("./feistelnetwork.zig.zig");
+const fent = @import("./feistelnetwork.zig");
 
 const ArrayList = std.ArrayList;
 const math = std.math;
@@ -113,9 +113,9 @@ pub fn main() !void {
     //      3º: message (in quotes)
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
     defer _ = gpa.deinit();
-    const allocator = gpa.allocator();
-    const args = try std.process.argsAlloc(allocator);
-    defer std.process.argsFree(allocator, args);
+    const aa = gpa.allocator();
+    const args = try std.process.argsAlloc(aa);
+    defer std.process.argsFree(aa, args);
 
     // Number of arguments
     if (4 != args.len) {
@@ -133,11 +133,25 @@ pub fn main() !void {
     try SboxGen(&sboxes, password);
 
     if (std.mem.eql(u8, option, "encrypt")) {
-        std.debug.print("{d}\n", .{message});
+        // Add PKCS#7 padding to the message
         var paddedData = try pkcs.PKCS7pad(message, 8);
-        std.debug.print("{d}\n", .{paddedData});
 
-        // TODO: Call encryption feistel network
+        var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
+        defer arena.deinit();
+        const allocator = arena.allocator();
+
+        var out = ArrayList(u8).init(allocator);
+        defer out.deinit();
+
+        for (0..paddedData.len / 8) |i| {
+            var block = paddedData[i * 8 .. i * 8 + 8];
+            for (0..16) |j| {
+                block = try fent.EncFeistelNetwork(block, sboxes[j * 256 .. j * 256 + 256]);
+            }
+            try out.appendSlice(block[0..]);
+        }
+
+        std.debug.print("{d}\n", .{out.items});
     } else if (std.mem.eql(u8, option, "decrypt")) {
         // TODO: Call decryption feistel network
 

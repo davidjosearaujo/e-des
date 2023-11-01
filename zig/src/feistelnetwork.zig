@@ -1,8 +1,36 @@
 const std = @import("std");
+const ArrayList = std.ArrayList;
 
-pub fn EncFeistelNetwork(block: []u8, sbox: []u8) []u8 {
-    _ = block;
-    _ = sbox;
+pub fn EncFeistelNetwork(block: []u8, sbox: []u8) ![]u8 {
+    var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
+    defer arena.deinit();
+    const allocator = arena.allocator();
+
+    var out = try allocator.alloc(u8, block.len);
+    var temp = try allocator.alloc(u8, block.len / 2);
+
+    var limit = @as(u8, @intCast(block.len / 2));
+    var start_i: u8 = @as(u8, @intCast(block.len - 1));
+    var start_j: u8 = 0;
+
+    std.debug.print("{d}\n", .{sbox.len});
+
+    var index: u8 = block[block.len - 1];
+
+    while (start_i > limit) {
+        out[start_i - limit] = block[start_i];
+        temp[start_j] = sbox[index];
+
+        index += block[start_i - 1];
+        start_i = start_i - 1;
+        start_j = start_j + 1;
+    }
+
+    for (0..limit) |i| {
+        out[i + limit] = temp[i] ^ block[i];
+    }
+
+    return out;
 }
 
 pub fn DecFeistelNetwork(block: []u8, sbox: []u8) []u8 {
