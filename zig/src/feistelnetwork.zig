@@ -13,24 +13,26 @@ pub fn EncFeistelNetwork(block: []u8, sbox: []u8) ![]u8 {
     var start_i: u8 = @as(u8, @intCast(block.len - 1));
     var start_j: u8 = 0;
 
-    std.debug.print("{d}\n", .{sbox.len});
+    var index: u8 = block[start_i];
 
-    var index: u8 = block[block.len - 1];
+    // FIX
+    // SBox not equal to Go version, Rubbik Shuffle may be flawed in Zig version
 
-    while (start_i > limit) {
+    while (start_i >= limit) {
         out[start_i - limit] = block[start_i];
         temp[start_j] = sbox[index];
 
         index += block[start_i - 1];
-        start_i = start_i - 1;
-        start_j = start_j + 1;
+
+        start_i -= 1;
+        start_j += 1;
     }
 
     for (0..limit) |i| {
         out[i + limit] = temp[i] ^ block[i];
     }
 
-    return out;
+    return try std.heap.page_allocator.dupe(u8, out);
 }
 
 pub fn DecFeistelNetwork(block: []u8, sbox: []u8) []u8 {

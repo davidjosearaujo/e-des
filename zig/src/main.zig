@@ -146,12 +146,14 @@ pub fn main() !void {
         for (0..paddedData.len / 8) |i| {
             var block = paddedData[i * 8 .. i * 8 + 8];
             for (0..16) |j| {
-                block = try fent.EncFeistelNetwork(block, sboxes[j * 256 .. j * 256 + 256]);
+                var sbox = sboxes[j * 256 .. j * 256 + 256];
+                block = try fent.EncFeistelNetwork(block, sbox);
             }
+
             try out.appendSlice(block[0..]);
         }
 
-        std.debug.print("{d}\n", .{out.items});
+        std.debug.print("{d}\n", .{std.fmt.fmtSliceHexLower(out.items)});
     } else if (std.mem.eql(u8, option, "decrypt")) {
         // TODO: Call decryption feistel network
 

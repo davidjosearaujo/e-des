@@ -6,6 +6,7 @@ package cmd
 import (
 	"bytes"
 	"fmt"
+	"os"
 
 	"github.com/spf13/cobra"
 )
@@ -26,11 +27,13 @@ func EncFeistelNetwork(block []byte, sbox []byte) ([]byte){
 	var temp = make([]byte, len(block)/2)
 	
 	index := block[len(block)-1]
+
 	for i,j:=len(block)-1, 0; i >= len(block)/2 ; i, j = i-1, j+1 {
 		// Ri-1 -> Li
 		out[i-len(block)/2] = block[i]
 		// Ri-1 -> fi
 		temp[j] = sbox[index]
+
 		index += block[i-1]
 	}
 
@@ -60,10 +63,10 @@ var encryptCmd = &cobra.Command{
 			block := blocks[i:i+8]
 
 			// Each block goes through a Feistel network with each S-Box
-			for _, box := range SBboxes {
-				block = EncFeistelNetwork(block, box)
+			for _, sbox := range SBboxes {
+				block = EncFeistelNetwork(block, sbox)
 			}
-			
+
 			out = append(out, block...)
 		}
 		fmt.Printf("%x\n", out)
