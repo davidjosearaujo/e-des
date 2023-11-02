@@ -6,8 +6,6 @@ package cmd
 import (
 	"bytes"
 	"fmt"
-	"os"
-
 	"github.com/spf13/cobra"
 )
 

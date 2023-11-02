@@ -68,17 +68,17 @@ func RubikShuffle(matrix []byte, ciphertext []byte) ([]byte, error) {
 
 	shuffleKey = shuffleKey[sideSize:]
 
+	var out []byte
 	// Rotate rows
 	for i, k := 0, 0; i < len(matrix); i, k = i+sideSize, k+1 {
 		temp := matrix[i : i+sideSize]
 		lastK := temp[(sideSize - shuffleKey[k]):sideSize]
 		firstSMK := temp[:(sideSize - shuffleKey[k])]
-		temp = append(lastK, firstSMK...)
-		temp = append(matrix[:i], temp...)
-		matrix = append(temp, matrix[i+sideSize:]...)
+		out = append(out, lastK...)
+		out = append(out, firstSMK...)
 	}
 
-	return matrix, nil
+	return out, nil
 }
 
 func SboxGen() {
