@@ -159,25 +159,26 @@ pub fn main() !void {
         defer arena.deinit();
         const allocator = arena.allocator();
 
-        // TESTING: Turn hex string message to byte array
-        var messageBytes = try allocator.alloc(u8, message.len);
-        _ = try std.fmt.hexToBytes(messageBytes, message);
+        // Half the size of the string because is each byte is represented
+        // by two characters
+        var blocks = try allocator.alloc(u8, message.len / 2);
+        _ = try std.fmt.hexToBytes(blocks, message);
 
         var out = ArrayList(u8).init(allocator);
         defer out.deinit();
 
-        for (0..messageBytes.len / 8) |i| {
-            var block = messageBytes[i * 8 .. i * 8 + 8];
-            for (0..16) |j| {
-                var sbox = sboxes[j * 256 .. j * 256 + 256];
+        for (0..blocks.len / 8) |i| {
+            var block = blocks[i * 8 .. i * 8 + 8];
+
+            var j:u16 = 16;
+            while (j > 0) {
+                var sbox = sboxes[j * 256 - 256 .. j * 256];
                 block = try fent.DecFeistelNetwork(block, sbox);
+                j -= 1;
             }
 
             try out.appendSlice(block[0..]);
         }
-
-        // TESTING
-        std.debug.print("{s}\n", .{std.fmt.fmtSliceHexLower(out.items[0..])});
 
         // DONE (uncomment later)
         var unpaddedData = try pkcs.PKCS7strip(out.items[0..], 8);
