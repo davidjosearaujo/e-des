@@ -13,16 +13,13 @@ pub fn EncFeistelNetwork(block: []u8, sbox: []u8) ![]u8 {
     var start_i: u8 = @as(u8, @intCast(block.len - 1));
     var start_j: u8 = 0;
 
-    var index: u8 = block[start_i];
-
-    // FIX
-    // SBox not equal to Go version, Rubbik Shuffle may be flawed in Zig version
+    var index: u32 = block[start_i];
 
     while (start_i >= limit) {
         out[start_i - limit] = block[start_i];
         temp[start_j] = sbox[index];
 
-        index += block[start_i - 1];
+        index = (index + block[start_i - 1]) % @as(u32, @intCast(sbox.len));
 
         start_i -= 1;
         start_j += 1;

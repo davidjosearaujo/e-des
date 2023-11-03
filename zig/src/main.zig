@@ -79,8 +79,6 @@ pub fn RubikShuffle(matrix: []u8, ciphertext: []const u8) !void {
             matrix[j] = newrow[k];
         }
     }
-
-    std.debug.print("{s}\n", .{std.fmt.fmtSliceHexLower(matrix)});
 }
 
 // DONE

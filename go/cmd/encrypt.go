@@ -31,7 +31,7 @@ func EncFeistelNetwork(block []byte, sbox []byte) ([]byte){
 		out[i-len(block)/2] = block[i]
 		// Ri-1 -> fi
 		temp[j] = sbox[index]
-
+		
 		index += block[i-1]
 	}
 
