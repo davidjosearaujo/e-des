@@ -6,7 +6,9 @@ pub fn PKCS7pad(data: []u8, blockSize: u8) ![]u8 {
         std.debug.print("pkcs7: Invalid block size {d}\n", .{blockSize});
         std.os.exit(1);
     } else {
-        var padLen: u8 = blockSize - @as(u8, @intCast(data.len)) % blockSize;
+        var t = data.len % blockSize;
+
+        var padLen: u8 = blockSize - @as(u8, @intCast(t));
 
         var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
         defer arena.deinit();

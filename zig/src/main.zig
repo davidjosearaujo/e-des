@@ -106,6 +106,61 @@ pub fn SboxGen(cleanbox: []u8, password: []u8) !void {
     try RubikShuffle(cleanbox, &ciphertext);
 }
 
+pub fn encrypt(message: []u8, sboxes: []u8) ![]u8 {
+    // Add PKCS#7 padding to the message
+    var paddedData = try pkcs.PKCS7pad(message, 8);
+
+    var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
+    defer arena.deinit();
+    const allocator = arena.allocator();
+
+    var out = ArrayList(u8).init(allocator);
+    defer out.deinit();
+
+    for (0..paddedData.len / 8) |i| {
+        var block = paddedData[i * 8 .. i * 8 + 8];
+        for (0..16) |j| {
+            var sbox = sboxes[j * 256 .. j * 256 + 256];
+            block = try fent.EncFeistelNetwork(block, sbox);
+        }
+
+        try out.appendSlice(block[0..]);
+    }
+
+    return try std.heap.page_allocator.dupe(u8, out.items[0..]);
+}
+
+pub fn decrypt(message: []u8, sboxes: []u8) ![]u8 {
+    var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
+    defer arena.deinit();
+    const allocator = arena.allocator();
+
+    // Half the size of the string because is each byte is represented
+    // by two characters
+    var blocks = try allocator.alloc(u8, message.len / 2);
+    _ = try std.fmt.hexToBytes(blocks, message);
+
+    var out = ArrayList(u8).init(allocator);
+    defer out.deinit();
+
+    for (0..blocks.len / 8) |i| {
+        var block = blocks[i * 8 .. i * 8 + 8];
+
+        var j: u16 = 16;
+        while (j > 0) {
+            var sbox = sboxes[j * 256 - 256 .. j * 256];
+            block = try fent.DecFeistelNetwork(block, sbox);
+            j -= 1;
+        }
+
+        try out.appendSlice(block[0..]);
+    }
+
+    var unpaddedData = try pkcs.PKCS7strip(out.items[0..], 8);
+
+    return try std.heap.page_allocator.dupe(u8, unpaddedData);
+}
+
 pub fn main() !void {
     // Argument calling order
     //      1º: encrypt or decrypt option
@@ -133,56 +188,73 @@ pub fn main() !void {
     try SboxGen(&sboxes, password);
 
     if (std.mem.eql(u8, option, "encrypt")) {
-        // Add PKCS#7 padding to the message
-        var paddedData = try pkcs.PKCS7pad(message, 8);
-
-        var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
-        defer arena.deinit();
-        const allocator = arena.allocator();
-
-        var out = ArrayList(u8).init(allocator);
-        defer out.deinit();
-
-        for (0..paddedData.len / 8) |i| {
-            var block = paddedData[i * 8 .. i * 8 + 8];
-            for (0..16) |j| {
-                var sbox = sboxes[j * 256 .. j * 256 + 256];
-                block = try fent.EncFeistelNetwork(block, sbox);
-            }
-
-            try out.appendSlice(block[0..]);
-        }
-
-        std.debug.print("{s}\n", .{std.fmt.fmtSliceHexLower(out.items)});
+        var out = try encrypt(message, &sboxes);
+        std.debug.print("{s}\n", .{std.fmt.fmtSliceHexLower(out)});
     } else if (std.mem.eql(u8, option, "decrypt")) {
-        var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
-        defer arena.deinit();
-        const allocator = arena.allocator();
-
-        // Half the size of the string because is each byte is represented
-        // by two characters
-        var blocks = try allocator.alloc(u8, message.len / 2);
-        _ = try std.fmt.hexToBytes(blocks, message);
-
-        var out = ArrayList(u8).init(allocator);
-        defer out.deinit();
-
-        for (0..blocks.len / 8) |i| {
-            var block = blocks[i * 8 .. i * 8 + 8];
-
-            var j:u16 = 16;
-            while (j > 0) {
-                var sbox = sboxes[j * 256 - 256 .. j * 256];
-                block = try fent.DecFeistelNetwork(block, sbox);
-                j -= 1;
-            }
-
-            try out.appendSlice(block[0..]);
-        }
-
-        var unpaddedData = try pkcs.PKCS7strip(out.items[0..], 8);
-        std.debug.print("{s}\n", .{unpaddedData});
+        var out = try decrypt(message, &sboxes);
+        std.debug.print("{s}\n", .{out});
     } else {
         std.debug.print("Option not available! Please choose either 'encrypt' or 'decrypt' mode\n", .{});
     }
+}
+
+test "encryt speed test" {
+    var password = [_]u8{ 'h', 'e', 'l', 'l', 'o' };
+    var message = [_]u8{0} ** 4096;
+
+    var sboxes = [_]u8{0} ** 4096;
+    try SboxGen(&sboxes, &password);
+
+    var enc_max: i64 = 0;
+    var enc_min: i64 = 0;
+    var enc_sum: i64 = 0;
+
+    var dec_max: i64 = 0;
+    var dec_min: i64 = 0;
+    var dec_sum: i64 = 0;
+
+    var rnd = std.rand.DefaultPrng.init(0);
+    for (0..1) |j| {
+        _ = j;
+        // Generate new random message
+        for (0..message.len) |i| {
+            var some_random_num = rnd.random().int(u8);
+            message[i] = some_random_num;
+        }
+
+        // Encrypt
+        var start_enc = std.time.timestamp();
+        var enc_out = try encrypt(&message, &sboxes);
+        var delta_enc = std.time.timestamp() - start_enc;
+
+        std.debug.print("\n{d}\t{d}\n", .{ start_enc, std.time.timestamp() });
+
+        if (delta_enc > enc_max) {
+            enc_max = delta_enc;
+        }
+        if (delta_enc < enc_min) {
+            enc_min = delta_enc;
+        }
+        enc_sum += delta_enc;
+
+        // Decrypt
+        var start_dec = std.time.timestamp();
+        var dec_out = try encrypt(enc_out, &sboxes);
+        _ = dec_out;
+        var delta_dec = std.time.timestamp() - start_dec;
+
+        if (delta_dec > dec_max) {
+            dec_max = delta_dec;
+        }
+        if (delta_dec < dec_min) {
+            dec_min = delta_dec;
+        }
+        dec_sum += delta_dec;
+
+        // Assert correct operations
+        //std.debug.assert(std.mem.eql(u8, &message, dec_out));
+    }
+
+    std.debug.print("Encryption times\nMax: {d}\t Min: {d}\tAverage: {d}\n", .{ enc_max, enc_min, @divFloor(enc_sum, 100000) });
+    std.debug.print("Decryption times\nMax: {d}\t Min: {d}\tAverage: {d}\n", .{ dec_max, dec_min, @divFloor(dec_sum, 100000) });
 }
