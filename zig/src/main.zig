@@ -153,13 +153,35 @@ pub fn main() !void {
             try out.appendSlice(block[0..]);
         }
 
-        std.debug.print("{d}\n", .{std.fmt.fmtSliceHexLower(out.items)});
+        std.debug.print("{s}\n", .{std.fmt.fmtSliceHexLower(out.items)});
     } else if (std.mem.eql(u8, option, "decrypt")) {
-        // TODO: Call decryption feistel network
+        var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
+        defer arena.deinit();
+        const allocator = arena.allocator();
+
+        // TESTING: Turn hex string message to byte array
+        var messageBytes = try allocator.alloc(u8, message.len);
+        _ = try std.fmt.hexToBytes(messageBytes, message);
+
+        var out = ArrayList(u8).init(allocator);
+        defer out.deinit();
+
+        for (0..messageBytes.len / 8) |i| {
+            var block = messageBytes[i * 8 .. i * 8 + 8];
+            for (0..16) |j| {
+                var sbox = sboxes[j * 256 .. j * 256 + 256];
+                block = try fent.DecFeistelNetwork(block, sbox);
+            }
+
+            try out.appendSlice(block[0..]);
+        }
+
+        // TESTING
+        std.debug.print("{s}\n", .{std.fmt.fmtSliceHexLower(out.items[0..])});
 
         // DONE (uncomment later)
-        //var unpaddedData = try pkcs.PKCS7strip(paddedData, 8);
-        //std.debug.print("{d}\n", .{unpaddedData});
+        var unpaddedData = try pkcs.PKCS7strip(out.items[0..], 8);
+        std.debug.print("{s}\n", .{unpaddedData});
     } else {
         std.debug.print("Option not available! Please choose either 'encrypt' or 'decrypt' mode\n", .{});
     }

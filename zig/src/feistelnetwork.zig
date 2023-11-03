@@ -32,7 +32,30 @@ pub fn EncFeistelNetwork(block: []u8, sbox: []u8) ![]u8 {
     return try std.heap.page_allocator.dupe(u8, out);
 }
 
-pub fn DecFeistelNetwork(block: []u8, sbox: []u8) []u8 {
-    _ = block;
-    _ = sbox;
+// TESTING
+pub fn DecFeistelNetwork(block: []u8, sbox: []u8) ![]u8 {
+    var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
+    defer arena.deinit();
+    const allocator = arena.allocator();
+
+    var limit = @as(u8, @intCast(block.len / 2));
+
+    var out = try allocator.alloc(u8, block.len);
+    var temp = try allocator.alloc(u8, limit);
+
+    var index: u32 = block[limit - 1];
+
+    for (0..limit) |i| {
+        out[limit + i] = block[i];
+        temp[i] = sbox[index];
+        if (i <= 2) {
+            index = (index + block[limit - 2 - i]) % @as(u32, @intCast(sbox.len));
+        }
+    }
+
+    for (0..limit) |i| {
+        out[i] = temp[i] ^ block[i + limit];
+    }
+
+    return try std.heap.page_allocator.dupe(u8, out);
 }
