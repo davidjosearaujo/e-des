@@ -180,7 +180,6 @@ pub fn main() !void {
             try out.appendSlice(block[0..]);
         }
 
-        // DONE (uncomment later)
         var unpaddedData = try pkcs.PKCS7strip(out.items[0..], 8);
         std.debug.print("{s}\n", .{unpaddedData});
     } else {

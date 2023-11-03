@@ -28,24 +28,23 @@ func PKCS7strip(data []byte, blockSize int) ([]byte, error) {
 	return data[:length-padLen], nil
 }
 
-// Feistel Network
-// will only process 8 byte blocks with a given S-Box
-func DecFeistelNetwork(block []byte, sbox []byte) ([]byte){
+// Decryption Feistel Network
+func DecFeistelNetwork(block []byte, sbox []byte) []byte {
 	var out = make([]byte, len(block))
 	var temp = make([]byte, len(block)/2)
 	index := block[len(block)/2-1]
 
-	for i:=0; i < len(block)/2; i++ {
+	for i := 0; i < len(block)/2; i++ {
 		// Li -> Ri-1
 		out[len(block)/2+i] = block[i]
 		// Li -> fi
 		temp[i] = sbox[index]
-		if i <= 2{
+		if i <= 2 {
 			index += block[len(block)/2-2-i]
 		}
 	}
 
-	for i:=0; i < len(block)/2; i++{
+	for i := 0; i < len(block)/2; i++ {
 		// Ri XOR f(Ki)
 		out[i] = temp[i] ^ block[i+len(block)/2]
 	}
@@ -67,12 +66,12 @@ var decryptCmd = &cobra.Command{
 		blocks, _ := hex.DecodeString(Message)
 
 		// Iterate through all blocks
-		for i:=0; i < len(blocks); i+=8 {
-			block := blocks[i:i+8]
+		for i := 0; i < len(blocks); i += 8 {
+			block := blocks[i : i+8]
 
 			// Each block goes through a Feistel network with each S-Box
 			// but now in reverse order
-			for j := len(SBboxes)-1; j >= 0; j-- {
+			for j := len(SBboxes) - 1; j >= 0; j-- {
 				block = DecFeistelNetwork(block, SBboxes[j])
 			}
 

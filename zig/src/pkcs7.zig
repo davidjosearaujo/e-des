@@ -14,6 +14,7 @@ pub fn PKCS7pad(data: []u8, blockSize: u8) ![]u8 {
 
         var padding = ArrayList(u8).init(allocator);
         defer padding.deinit();
+
         for (0..data.len) |i| {
             try padding.append(data[i]);
         }
@@ -36,6 +37,7 @@ pub fn PKCS7strip(data: []u8, blockSize: u8) ![]u8 {
         std.debug.print("pkcs7: Data is not block-aligned\n", .{});
         std.os.exit(1);
     }
+
     var padLen: u8 = data[length - 1];
 
     if (padLen > blockSize or padLen == 0) {
@@ -51,6 +53,5 @@ test "pad & unpad" {
     var data = [_]u8{ 't', 'e', 's', 't' };
     var padded = try PKCS7pad(data[0..], 8);
     var unpadded = try PKCS7strip(padded, 8);
-    std.debug.print("\nOriginal:\t{d}\nPadded:\t\t{d}\nUnpadded:\t{d}\n", .{ data, padded, unpadded });
     std.debug.assert(std.mem.eql(u8, &data, unpadded));
 }

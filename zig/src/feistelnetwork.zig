@@ -6,10 +6,11 @@ pub fn EncFeistelNetwork(block: []u8, sbox: []u8) ![]u8 {
     defer arena.deinit();
     const allocator = arena.allocator();
 
-    var out = try allocator.alloc(u8, block.len);
-    var temp = try allocator.alloc(u8, block.len / 2);
-
     var limit = @as(u8, @intCast(block.len / 2));
+
+    var out = try allocator.alloc(u8, block.len);
+    var temp = try allocator.alloc(u8, limit);
+
     var start_i: u8 = @as(u8, @intCast(block.len - 1));
     var start_j: u8 = 0;
 
@@ -32,7 +33,6 @@ pub fn EncFeistelNetwork(block: []u8, sbox: []u8) ![]u8 {
     return try std.heap.page_allocator.dupe(u8, out);
 }
 
-// TESTING
 pub fn DecFeistelNetwork(block: []u8, sbox: []u8) ![]u8 {
     var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
     defer arena.deinit();
