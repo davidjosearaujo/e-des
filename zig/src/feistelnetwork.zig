@@ -30,6 +30,8 @@ pub fn EncFeistelNetwork(block: []u8, sbox: []u8) ![]u8 {
         out[i + limit] = temp[i] ^ block[i];
     }
 
+    allocator.free(temp);
+
     return try std.heap.page_allocator.dupe(u8, out);
 }
 
@@ -56,6 +58,8 @@ pub fn DecFeistelNetwork(block: []u8, sbox: []u8) ![]u8 {
     for (0..limit) |i| {
         out[i] = temp[i] ^ block[i + limit];
     }
+
+    allocator.free(temp);
 
     return try std.heap.page_allocator.dupe(u8, out);
 }

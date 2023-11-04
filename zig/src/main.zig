@@ -123,9 +123,10 @@ pub fn encrypt(message: []u8, sboxes: []u8) ![]u8 {
             var sbox = sboxes[j * 256 .. j * 256 + 256];
             block = try fent.EncFeistelNetwork(block, sbox);
         }
-
         try out.appendSlice(block[0..]);
+        std.heap.page_allocator.free(block);
     }
+    std.heap.page_allocator.free(paddedData);
 
     return try std.heap.page_allocator.dupe(u8, out.items[0..]);
 }
@@ -147,13 +148,11 @@ pub fn decrypt(message: []u8, sboxes: []u8) ![]u8 {
             block = try fent.DecFeistelNetwork(block, sbox);
             j -= 1;
         }
-
         try out.appendSlice(block[0..]);
+        std.heap.page_allocator.free(block);
     }
 
-    var unpaddedData = try pkcs.PKCS7strip(out.items[0..], 8);
-
-    return try std.heap.page_allocator.dupe(u8, unpaddedData);
+    return try pkcs.PKCS7strip(out.items[0..], 8);
 }
 
 pub fn main() !void {
@@ -204,7 +203,6 @@ pub fn main() !void {
 
 test "encryt speed test" {
     var password = [_]u8{ 'h', 'e', 'l', 'l', 'o' };
-    var message = [_]u8{0} ** 4096;
 
     var sboxes = [_]u8{0} ** 4096;
     try SboxGen(&sboxes, &password);
@@ -218,10 +216,11 @@ test "encryt speed test" {
     var dec_sum: i128 = 0;
 
     var rnd = std.rand.DefaultPrng.init(0);
-    var nTest: u64 = 3;
+    var nTest: u64 = 4;
     for (0..nTest) |j| {
         _ = j;
         // Generate new random message
+        var message = [_]u8{0} ** 4096;
         for (0..message.len) |i| {
             var some_random_num = rnd.random().int(u8);
             message[i] = some_random_num;
@@ -254,6 +253,9 @@ test "encryt speed test" {
         dec_sum += delta_dec;
 
         std.debug.assert(std.mem.eql(u8, &message, dec_out));
+
+        std.heap.page_allocator.free(enc_out);
+        std.heap.page_allocator.free(dec_out);
     }
 
     std.debug.print("Encryption times\nMax: {d}\tMin: {d}\tAverage: {d}\n", .{ enc_max, enc_min, @divFloor(enc_sum, nTest) });
