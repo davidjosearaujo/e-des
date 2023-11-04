@@ -135,16 +135,11 @@ pub fn decrypt(message: []u8, sboxes: []u8) ![]u8 {
     defer arena.deinit();
     const allocator = arena.allocator();
 
-    // Half the size of the string because is each byte is represented
-    // by two characters
-    var blocks = try allocator.alloc(u8, message.len / 2);
-    _ = try std.fmt.hexToBytes(blocks, message);
-
     var out = ArrayList(u8).init(allocator);
     defer out.deinit();
 
-    for (0..blocks.len / 8) |i| {
-        var block = blocks[i * 8 .. i * 8 + 8];
+    for (0..message.len / 8) |i| {
+        var block = message[i * 8 .. i * 8 + 8];
 
         var j: u16 = 16;
         while (j > 0) {
@@ -191,7 +186,16 @@ pub fn main() !void {
         var out = try encrypt(message, &sboxes);
         std.debug.print("{s}\n", .{std.fmt.fmtSliceHexLower(out)});
     } else if (std.mem.eql(u8, option, "decrypt")) {
-        var out = try decrypt(message, &sboxes);
+        var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
+        defer arena.deinit();
+        const allocator = arena.allocator();
+
+        // Half the size of the string because is each byte is represented
+        // by two characters
+        var blocks = try allocator.alloc(u8, message.len / 2);
+        _ = try std.fmt.hexToBytes(blocks, message);
+
+        var out = try decrypt(blocks, &sboxes);
         std.debug.print("{s}\n", .{out});
     } else {
         std.debug.print("Option not available! Please choose either 'encrypt' or 'decrypt' mode\n", .{});
@@ -205,16 +209,17 @@ test "encryt speed test" {
     var sboxes = [_]u8{0} ** 4096;
     try SboxGen(&sboxes, &password);
 
-    var enc_max: i64 = 0;
-    var enc_min: i64 = 0;
-    var enc_sum: i64 = 0;
+    var enc_max: i128 = 0;
+    var enc_min: i128 = 0;
+    var enc_sum: i128 = 0;
 
-    var dec_max: i64 = 0;
-    var dec_min: i64 = 0;
-    var dec_sum: i64 = 0;
+    var dec_max: i128 = 0;
+    var dec_min: i128 = 0;
+    var dec_sum: i128 = 0;
 
     var rnd = std.rand.DefaultPrng.init(0);
-    for (0..1) |j| {
+    var nTest: u64 = 3;
+    for (0..nTest) |j| {
         _ = j;
         // Generate new random message
         for (0..message.len) |i| {
@@ -223,38 +228,34 @@ test "encryt speed test" {
         }
 
         // Encrypt
-        var start_enc = std.time.timestamp();
+        var start_enc = std.time.nanoTimestamp();
         var enc_out = try encrypt(&message, &sboxes);
-        var delta_enc = std.time.timestamp() - start_enc;
-
-        std.debug.print("\n{d}\t{d}\n", .{ start_enc, std.time.timestamp() });
+        var delta_enc = std.time.nanoTimestamp() - start_enc;
 
         if (delta_enc > enc_max) {
             enc_max = delta_enc;
         }
-        if (delta_enc < enc_min) {
+        if (delta_enc < enc_min or enc_min == 0) {
             enc_min = delta_enc;
         }
         enc_sum += delta_enc;
 
         // Decrypt
-        var start_dec = std.time.timestamp();
-        var dec_out = try encrypt(enc_out, &sboxes);
-        _ = dec_out;
-        var delta_dec = std.time.timestamp() - start_dec;
+        var start_dec = std.time.nanoTimestamp();
+        var dec_out = try decrypt(enc_out, &sboxes);
+        var delta_dec = std.time.nanoTimestamp() - start_dec;
 
         if (delta_dec > dec_max) {
             dec_max = delta_dec;
         }
-        if (delta_dec < dec_min) {
+        if (delta_dec < dec_min or dec_min == 0) {
             dec_min = delta_dec;
         }
         dec_sum += delta_dec;
 
-        // Assert correct operations
-        //std.debug.assert(std.mem.eql(u8, &message, dec_out));
+        std.debug.assert(std.mem.eql(u8, &message, dec_out));
     }
 
-    std.debug.print("Encryption times\nMax: {d}\t Min: {d}\tAverage: {d}\n", .{ enc_max, enc_min, @divFloor(enc_sum, 100000) });
-    std.debug.print("Decryption times\nMax: {d}\t Min: {d}\tAverage: {d}\n", .{ dec_max, dec_min, @divFloor(dec_sum, 100000) });
+    std.debug.print("Encryption times\nMax: {d}\tMin: {d}\tAverage: {d}\n", .{ enc_max, enc_min, @divFloor(enc_sum, nTest) });
+    std.debug.print("Decryption times\nMax: {d}\tMin: {d}\tAverage: {d}\n", .{ dec_max, dec_min, @divFloor(dec_sum, nTest) });
 }
