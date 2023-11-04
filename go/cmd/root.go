@@ -81,9 +81,9 @@ func RubikShuffle(matrix []byte, ciphertext []byte) ([]byte, error) {
 	return out, nil
 }
 
-func SboxGen() {
+func SboxGen(password []byte) {
 	// Key generation
-	Key = sha256.Sum256([]byte(Password))
+	Key = sha256.Sum256(password)
 
 	aead, _ := chacha20poly1305.NewX(Key[:])
 

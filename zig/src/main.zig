@@ -258,6 +258,6 @@ test "encryt speed test" {
         std.heap.page_allocator.free(dec_out);
     }
 
-    std.debug.print("Encryption times\nMax: {d}\tMin: {d}\tAverage: {d}\n", .{ enc_max, enc_min, @divFloor(enc_sum, nTest) });
+    std.debug.print("\nEncryption times\nMax: {d}\tMin: {d}\tAverage: {d}\n", .{ enc_max, enc_min, @divFloor(enc_sum, nTest) });
     std.debug.print("Decryption times\nMax: {d}\tMin: {d}\tAverage: {d}\n", .{ dec_max, dec_min, @divFloor(dec_sum, nTest) });
 }

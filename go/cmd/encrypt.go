@@ -43,31 +43,37 @@ func EncFeistelNetwork(block []byte, sbox []byte) ([]byte){
 	return out
 }
 
+func Encrypt(blocks []byte) []byte{
+	var out []byte
+
+	// Add PKCS#7 padding to the message
+	blocks_s, _ := PKCS7pad(blocks, 8)
+
+	// Iterate through all blocks
+	for i:=0; i < len(blocks_s); i += 8{
+		block := blocks_s[i:i+8]
+
+		// Each block goes through a Feistel network with each S-Box
+		for _, sbox := range SBboxes {
+			block = EncFeistelNetwork(block, sbox)
+		}
+
+		out = append(out, block...)
+	}
+
+	return out
+}
+
 // encryptCmd represents the encrypt command
 var encryptCmd = &cobra.Command{
 	Use:   "encrypt",
 	Short: "Encrypt the content of the message",
 	PreRun: func(cmd *cobra.Command, args []string) {
-		SboxGen()
+		SboxGen([]byte(Password))
 	},
 	Run: func(cmd *cobra.Command, args []string) {	
-		var out []byte
-
-		// Add PKCS#7 padding to the message
-		blocks, _ := PKCS7pad([]byte(Message), 8)
-
-		// Iterate through all blocks
-		for i:=0; i < len(blocks); i += 8{
-			block := blocks[i:i+8]
-
-			// Each block goes through a Feistel network with each S-Box
-			for _, sbox := range SBboxes {
-				block = EncFeistelNetwork(block, sbox)
-			}
-
-			out = append(out, block...)
-		}
-		fmt.Printf("%x\n", out)
+		Encrypt([]byte(Message))
+		fmt.Printf("%x\n", Encrypt([]byte(Message)))
 	},
 }
 

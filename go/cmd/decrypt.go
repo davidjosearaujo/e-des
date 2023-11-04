@@ -52,36 +52,40 @@ func DecFeistelNetwork(block []byte, sbox []byte) []byte {
 	return out
 }
 
+// Decrypt
+func Decrypt(blocks []byte) []byte {
+	var out []byte
+
+	// Iterate through all blocks
+	for i := 0; i < len(blocks); i += 8 {
+		block := blocks[i : i+8]
+
+		// Each block goes through a Feistel network with each S-Box
+		// but now in reverse order
+		for j := len(SBboxes) - 1; j >= 0; j-- {
+			block = DecFeistelNetwork(block, SBboxes[j])
+		}
+
+		out = append(out, block...)
+	}
+
+	// Remove PKCS#7 padding from the message
+	message, _ := PKCS7strip(out, 8)
+
+	return message
+}
+
 // decryptCmd represents the decrypt command
 var decryptCmd = &cobra.Command{
 	Use:   "decrypt",
 	Short: "Decrypt the content of the message",
 	PreRun: func(cmd *cobra.Command, args []string) {
-		SboxGen()
+		SboxGen([]byte(Password))
 	},
 	Run: func(cmd *cobra.Command, args []string) {
-		var out []byte
-
 		// Cast message to byte array
 		blocks, _ := hex.DecodeString(Message)
-
-		// Iterate through all blocks
-		for i := 0; i < len(blocks); i += 8 {
-			block := blocks[i : i+8]
-
-			// Each block goes through a Feistel network with each S-Box
-			// but now in reverse order
-			for j := len(SBboxes) - 1; j >= 0; j-- {
-				block = DecFeistelNetwork(block, SBboxes[j])
-			}
-
-			out = append(out, block...)
-		}
-
-		// Remove PKCS#7 padding from the message
-		message, _ := PKCS7strip(out, 8)
-
-		fmt.Printf("%s\n", message)
+		fmt.Printf("%s\n", Decrypt(blocks))
 	},
 }
 
