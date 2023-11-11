@@ -119,14 +119,3 @@ Using more pointers instead of frequent memory allocations can lead to significa
 #### Limitations and shortcomings
 
 In the context of Zig, as previously mentioned, the adoption of manual memory allocation and the extensive use of pointers can bring about notable efficiency and performance improvements. However, this approach does carry the risk of introducing errors stemming from programmer oversight. This particular aspect becomes evident in Zig's performance testing, where the system falls short of meeting the prescribed parameters. Specifically, when attempting to execute 100,000 consecutive encryption and decryption operations, it triggers memory management errors. This occurrence is likely attributed to an aspect of the program's design that may not be optimally performance-oriented rather than an inherent limitation of the technology itself.
-
-<style>
-* {
-   box-sizing: border-box;
-}
-.imageColumn {
-   float: left;
-   width: 50%;
-   padding: 10px;
-}
-</style>
