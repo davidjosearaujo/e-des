@@ -25,7 +25,7 @@ The initial step in securely encrypting data involves deriving a robust 256-bit 
 To generate this key, we employ a straightforward method—calculating the hash of the password using the **SHA-256** digest function. However, for added security, this key isn't used directly for encryption. Instead, it serves as the data to be encrypted using **ChaCha20X-Poly1305**, a stream cipher recognized for its remarkable efficiency and resilience against a spectrum of cryptographic attacks. This process results in the creation of a 128-bit shuffling key, which will subsequently be used to rearrange the S-boxes further enhancing the encryption's security.
 
 <div align="center">
-    <img src="./prints/03-key-exchange-index.png">
+    <img src="./doc/prints/03-key-exchange-index.png">
 </div>
 
 ### Why is shuffling necessary?
@@ -40,7 +40,7 @@ The most efficient method for creating these boxes is to generate a sequential l
 In this project, I introduced a concept I referred to as **_Rubik Shuffling_**. The idea involves treating a list of 4096 elements as a 64 by 64 square matrix. Using a 128-bit shuffling key, where all values are subject to a modulus of 64, half of this key is employed to determine offsets for rotating the columns, while the other half determines offsets for rotating the rows. This technique essentially reorders the elements within the matrix using these calculated offsets, resulting in the Rubik's Shuffling process.
 
 <div align="center">
-    <img src="./prints/04-rubikshuffle.png">
+    <img src="./doc/prints/04-rubikshuffle.png">
 </div>
 
 ## Feistel Networks in encryption and decryption
@@ -50,7 +50,7 @@ In this project, I introduced a concept I referred to as **_Rubik Shuffling_**. 
 In the encryption process itself, much like DES, E-DES employs Feistel Networks. A Feistel Network represents a widely used symmetric-key block cipher construction in modern cryptographic algorithms. Its operation involves iteratively dividing the input block into two equal halves (4 bytes each in E-DES) referred to as the left and right sides. Subsequently, it applies a series of rounds where one half undergoes a transformation while the other half remains unaltered. This transformed half typically undergoes a complex function, which, in the case of E-DES, involves using the value of each byte as an index within the provided _S-box_ and substituting it with the value located at that index. This process iterates for a predetermined number of rounds (16, one for each _S-box_), ultimately culminating in the combination of the two halves to yield the final ciphertext.
 
 <div align="center">
-    <img src="./prints/06-feistel-enc.png">
+    <img src="./doc/prints/06-feistel-enc.png">
 </div>
 
 ### Encryption and decryption
@@ -58,14 +58,14 @@ In the encryption process itself, much like DES, E-DES employs Feistel Networks.
 This procedure is reiterated for each block of the original text. E-DES uses 8-byte blocks, necessitating padding before encryption. The final ciphertext is formed by concatenating all the independently encrypted blocks, following the adoption of the ECB mode.
 
 <div align="center">
-    <img src="./prints/05-block-encryption.png">
+    <img src="./doc/prints/05-block-encryption.png">
 </div>
 
 
 The decryption process in E-DES mirrors the encryption process in reverse. Each block of the original ciphertext, which is the result of independently encrypting 8-byte blocks using the ECB mode, is subject to decryption. The independently decrypted blocks are then concatenated to reconstruct the original plaintext. The use of Feistel Networks ensures that the decryption process is a precise inverse of the encryption process, maintaining data integrity and security. The process involves taking each block of ciphertext, applying the reverse of the _S-box_ substitution, and reversing the order of subkeys in each round to recover the original data. Padding, if added during encryption, is also handled appropriately during decryption to ensure the complete and accurate retrieval of the original text.
 
 <div align="center">
-    <img src="./prints/07-feistel-dec.png">
+    <img src="./doc/prints/07-feistel-dec.png">
 </div>
 
 <div style="page-break-after: always;"></div>
@@ -77,11 +77,11 @@ The decryption process in E-DES mirrors the encryption process in reverse. Each 
 First, in order to test these applications, since they are both written in compiled programming languages, we must compile the source code into the respective binaries. This can be done in Go and Zig as follows.
 
 <div align="center">
-    <img src="./prints/go-01-build.png">
+    <img src="./doc/prints/go-01-build.png">
 </div>
 
 <div align="center">
-    <img src="./prints/zig-01-build.png">
+    <img src="./doc/prints/zig-01-build.png">
 </div>
 
 As we can see, both can be used as CLI applications to encrypt and decrypt simple text messages.
@@ -93,7 +93,7 @@ For testing, timestamps are measured right after the _S-box_ creation and after 
 This was done for both applications, and these were also compared with a standard DES implementation, which performed encryption over messages of equal size.
 
 <div align="center">
-    <img src="./prints/02-test.png">
+    <img src="./doc/prints/02-test.png">
 </div>
 
 DES has a performance advantage over E-DES of approximately 28% in encryption and 14.5 times in decryption. This means that DES can encrypt or decrypt data about 28% faster than E-DES.
@@ -101,7 +101,7 @@ DES has a performance advantage over E-DES of approximately 28% in encryption an
 Significantly, to confirm that both applications indeed adhere to the same algorithm, it's noteworthy that content can be seamlessly encrypted and decrypted interchangeably between the two.
 
 <div align="center">
-    <img src="./prints/go-zig-exchange.png">
+    <img src="./doc/prints/go-zig-exchange.png">
 </div>
 
 <div style="page-break-after: always;"></div>
